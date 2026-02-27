@@ -258,7 +258,7 @@ export default function ResultsScreen() {
 
   if (!derby) return null;
 
-  const podiumHeights = [120, 170, 90];
+  const maxCount = rankings.length > 0 ? Math.max(...rankings.map(r => r.count), 1) : 1;
   const podiumDelays = [600, 200, 900];
 
   return (
@@ -290,13 +290,15 @@ export default function ResultsScreen() {
 
           <View style={styles.podiumArea}>
             {podiumOrder.map((entry, i) => {
-              const originalIndex = rankings.findIndex(r => r.rank === entry.rank);
               const heightIndex = entry.rank - 1;
+              const proportionalHeight = maxCount > 0
+                ? Math.max(40, (entry.count / maxCount) * 170)
+                : 40;
               return (
                 <PodiumBlock
                   key={entry.id}
                   entry={entry}
-                  height={podiumHeights[heightIndex] ?? 70}
+                  height={proportionalHeight}
                   delay={podiumDelays[heightIndex] ?? 1000}
                 />
               );
