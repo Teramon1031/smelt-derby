@@ -13,13 +13,14 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MapPin, Minus, UserCircle } from 'lucide-react-native';
+import { MapPin, Minus, UserCircle, Thermometer } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useDerby } from '@/contexts/DerbyContext';
 import FloatingFishDecor from '@/components/FloatingFishDecor';
 import FishIcon from '@/components/FishIcon';
 import type { Participant } from '@/types/derby';
+import { useWeather } from '@/hooks/useWeather';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const BAR_AREA_WIDTH = SCREEN_WIDTH - 140;
@@ -356,6 +357,7 @@ export default function DerbyScreen() {
     getCatchCount,
   } = useDerby();
 
+  const { temperature, isLoading: weatherLoading } = useWeather();
   const [iconModalVisible, setIconModalVisible] = useState(false);
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
   const totalBounce = useRef(new Animated.Value(1)).current;
@@ -459,6 +461,12 @@ export default function DerbyScreen() {
                 <Text style={styles.locationText}>{activeDerby.location}</Text>
               </View>
             ) : null}
+            {temperature !== null && (
+              <View style={styles.tempRow}>
+                <Thermometer color={Colors.icyBlue} size={11} />
+                <Text style={styles.tempText}>{temperature}°C</Text>
+              </View>
+            )}
           </View>
 
           <Animated.View style={[styles.totalBubble, { transform: [{ scale: totalBounce }] }]}>
@@ -612,6 +620,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.icyBlue,
     opacity: 0.7,
+  },
+  tempRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
+    marginTop: 3,
+  },
+  tempText: {
+    fontSize: 12,
+    color: Colors.icyBlue,
+    fontWeight: '600' as const,
+    opacity: 0.8,
   },
   totalBubble: {
     flexDirection: 'row',
