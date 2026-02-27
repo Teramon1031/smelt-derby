@@ -360,11 +360,12 @@ export default function DerbyScreen() {
   const { temperature, isLoading: weatherLoading } = useWeather();
   const [iconModalVisible, setIconModalVisible] = useState(false);
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
+  const isEndingRef = useRef(false);
   const totalBounce = useRef(new Animated.Value(1)).current;
   const prevTotal = useRef(totalCatchCount);
 
   useEffect(() => {
-    if (!activeDerby) {
+    if (!activeDerby && !isEndingRef.current) {
       router.replace('/');
     }
   }, [activeDerby]);
@@ -425,6 +426,7 @@ export default function DerbyScreen() {
           text: '終了して結果へ',
           onPress: () => {
             const derbyId = activeDerby?.id;
+            isEndingRef.current = true;
             endDerby();
             if (derbyId) {
               router.replace({ pathname: '/results', params: { derbyId } });
