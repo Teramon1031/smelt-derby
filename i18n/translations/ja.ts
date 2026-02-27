@@ -48,6 +48,16 @@ const ja = {
   weather_error_location: '位置情報を取得できませんでした',
   weather_error_temperature: '気温を取得できませんでした',
   weather_error_fetch: '気温の取得に失敗しました',
+
+  // Room (online mode)
+  room_create_btn: 'オンラインルームを作成',
+  room_banner_label: 'ルームコード',
+  room_copy_link: 'リンクをコピー',
+  room_copied: 'コピーしました！',
+  room_not_found: 'ルームが見つかりません',
+  room_join_hint: 'リンクを送れば友達がすぐ参加できます',
+  room_end_btn: '終了！',
+  room_confirm_end: '終了して結果へ',
 } as const;
 
 export default ja;

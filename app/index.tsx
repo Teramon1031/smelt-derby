@@ -13,13 +13,16 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MapPin, Users, Plus, X, ChevronRight, Snowflake } from 'lucide-react-native';
+import { MapPin, Users, Plus, X, ChevronRight, Snowflake, Globe } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import Colors from '@/constants/colors';
 import { useDerby } from '@/contexts/DerbyContext';
 import MountainBackground from '@/components/MountainBackground';
 import FishIcon from '@/components/FishIcon';
 import type { Derby } from '@/types/derby';
+import { supabase } from '@/lib/supabase';
+import { createUniqueRoomId } from '@/lib/roomId';
+import { getSessionId } from '@/hooks/useSessionId';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -47,6 +50,7 @@ export default function SetupScreen() {
   const [location, setLocation] = useState('');
   const [participants, setParticipants] = useState<string[]>(['']);
   const [error, setError] = useState('');
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -104,6 +108,46 @@ export default function SetupScreen() {
     createDerby(trimmedName, trimmedLocation, validParticipants);
     router.replace('/derby');
   }, [eventName, location, participants, createDerby, router]);
+
+  const handleCreateRoom = useCallback(async () => {
+    const trimmedName = eventName.trim();
+    const trimmedLocation = location.trim();
+    const validParticipants = participants.map(p => p.trim()).filter(p => p.length > 0);
+
+    if (!trimmedName) { setError(t('setup_error_name')); return; }
+    if (validParticipants.length < 2) { setError(t('setup_error_participants')); return; }
+
+    setError('');
+    setIsCreatingRoom(true);
+    try {
+      const sessionId = await getSessionId();
+      const roomId = await createUniqueRoomId();
+      const today = new Date().toISOString().split('T')[0];
+      const participantColors = Colors.participantColors;
+      const participantsData = validParticipants.map((name, i) => ({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8) + i,
+        name,
+        color: participantColors[i % participantColors.length],
+      }));
+
+      const { error: insertError } = await supabase.from('rooms').insert({
+        room_id: roomId,
+        name: trimmedName,
+        location: trimmedLocation,
+        date: today,
+        participants: participantsData,
+        created_by: sessionId,
+        is_active: true,
+      });
+
+      if (insertError) throw insertError;
+      router.replace(`/room/${roomId}` as any);
+    } catch (err) {
+      setError('ルームの作成に失敗しました。もう一度お試しください。');
+    } finally {
+      setIsCreatingRoom(false);
+    }
+  }, [eventName, location, participants, router, t]);
 
   return (
     <View style={styles.root}>
@@ -228,6 +272,19 @@ export default function SetupScreen() {
               >
                 <Text style={styles.startBtnText}>{t('setup_start_btn')}</Text>
                 <ChevronRight color="#FFF" size={20} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.roomBtn, isCreatingRoom && styles.roomBtnDisabled]}
+                onPress={handleCreateRoom}
+                activeOpacity={0.8}
+                disabled={isCreatingRoom}
+                testID="create-room"
+              >
+                <Globe color={Colors.icyBlue} size={18} />
+                <Text style={styles.roomBtnText}>
+                  {isCreatingRoom ? '作成中...' : t('room_create_btn')}
+                </Text>
               </TouchableOpacity>
             </Animated.View>
             {pastDerbies.length > 0 && (
@@ -455,5 +512,24 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 17,
     fontWeight: '700' as const,
+  },
+  roomBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    paddingVertical: 14,
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: 'rgba(168,213,226,0.3)',
+    backgroundColor: 'rgba(168,213,226,0.06)',
+  },
+  roomBtnDisabled: {
+    opacity: 0.5,
+  },
+  roomBtnText: {
+    color: Colors.icyBlue,
+    fontSize: 15,
+    fontWeight: '600' as const,
   },
 });

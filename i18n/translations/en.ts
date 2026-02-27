@@ -48,6 +48,16 @@ const en = {
   weather_error_location: 'Could not retrieve location',
   weather_error_temperature: 'Could not retrieve temperature',
   weather_error_fetch: 'Failed to fetch temperature',
+
+  // Room (online mode)
+  room_create_btn: 'Create Online Room',
+  room_banner_label: 'Room Code',
+  room_copy_link: 'Copy Link',
+  room_copied: 'Copied!',
+  room_not_found: 'Room not found',
+  room_join_hint: 'Share this link so friends can join instantly',
+  room_end_btn: 'End!',
+  room_confirm_end: 'End & See Results',
 } as const;
 
 export default en;

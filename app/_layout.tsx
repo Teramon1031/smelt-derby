@@ -22,6 +22,7 @@ function RootLayoutNav() {
       <Stack.Screen name="index" />
       <Stack.Screen name="derby" />
       <Stack.Screen name="results" />
+      <Stack.Screen name="room" />
     </Stack>
   );
 }
