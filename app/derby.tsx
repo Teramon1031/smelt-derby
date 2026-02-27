@@ -133,6 +133,8 @@ function CatchFishBackground({ count }: { count: number }) {
   );
 }
 
+const MAX_BAR_WIDTH = BAR_AREA_WIDTH - 60;
+
 interface BarRowProps {
   participant: Participant;
   count: number;
@@ -149,15 +151,14 @@ function BarRow({ participant, count, maxCount, rank, onTapFish, onLongPress }: 
   const [showSplash, setShowSplash] = useState(false);
 
   const targetWidth = useMemo(() => {
-    if (maxCount === 0) return 24;
-    return Math.max(24, (count / Math.max(maxCount, 1)) * (BAR_AREA_WIDTH - 50));
+    if (count === 0 || maxCount === 0) return 0;
+    return Math.max(28, (count / maxCount) * MAX_BAR_WIDTH);
   }, [count, maxCount]);
 
   useEffect(() => {
-    Animated.spring(barWidth, {
+    Animated.timing(barWidth, {
       toValue: targetWidth,
-      friction: 7,
-      tension: 50,
+      duration: 180,
       useNativeDriver: false,
     }).start();
   }, [targetWidth]);
@@ -231,7 +232,7 @@ function BarRow({ participant, count, maxCount, rank, onTapFish, onLongPress }: 
               testID={`fish-tap-${participant.id}`}
               style={barStyles.fishTapArea}
             >
-              <ComicalFishTip color={participant.color} size={34} />
+              <ComicalFishTip color={participant.color} size={52} />
               <SplashEffect visible={showSplash} />
             </TouchableOpacity>
           </Animated.View>
@@ -347,6 +348,7 @@ export default function DerbyScreen() {
     decrementCatch,
     endDerby,
     getCatchCount,
+    isLoading,
   } = useDerby();
 
   const { t } = useTranslation();
@@ -356,10 +358,10 @@ export default function DerbyScreen() {
   const prevTotal = useRef(totalCatchCount);
 
   useEffect(() => {
-    if (!activeDerby && !isEndingRef.current) {
+    if (!isLoading && !activeDerby && !isEndingRef.current) {
       router.replace('/');
     }
-  }, [activeDerby]);
+  }, [isLoading, activeDerby]);
 
   useEffect(() => {
     if (totalCatchCount > prevTotal.current) {
@@ -428,7 +430,7 @@ export default function DerbyScreen() {
     incrementCatch(participantId);
   }, [incrementCatch]);
 
-  if (!activeDerby) return null;
+  if (isLoading || !activeDerby) return null;
 
   return (
     <View style={styles.root}>
