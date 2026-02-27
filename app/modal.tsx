@@ -9,9 +9,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Colors from '@/constants/colors';
 
 export default function ModalScreen() {
+  const { t } = useTranslation();
   return (
     <Modal
       animationType="fade"
@@ -21,12 +23,12 @@ export default function ModalScreen() {
     >
       <Pressable style={styles.overlay} onPress={() => router.back()}>
         <View style={styles.modalContent}>
-          <Text style={styles.title}>ワカサギダービー</Text>
+          <Text style={styles.title}>{t('modal_title')}</Text>
           <TouchableOpacity
             style={styles.closeButton}
             onPress={() => router.back()}
           >
-            <Text style={styles.closeButtonText}>閉じる</Text>
+            <Text style={styles.closeButtonText}>{t('modal_close')}</Text>
           </TouchableOpacity>
         </View>
       </Pressable>

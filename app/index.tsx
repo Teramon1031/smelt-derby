@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MapPin, Users, Plus, X, ChevronRight, Snowflake } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import Colors from '@/constants/colors';
 import { useDerby } from '@/contexts/DerbyContext';
 import MountainBackground from '@/components/MountainBackground';
@@ -23,6 +24,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function SetupScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { activeDerby, createDerby } = useDerby();
   const [eventName, setEventName] = useState('');
   const [location, setLocation] = useState('');
@@ -73,11 +75,11 @@ export default function SetupScreen() {
     const validParticipants = participants.map(p => p.trim()).filter(p => p.length > 0);
 
     if (!trimmedName) {
-      setError('イベント名を入力してください');
+      setError(t('setup_error_name'));
       return;
     }
     if (validParticipants.length < 2) {
-      setError('2人以上の参加者を入力してください');
+      setError(t('setup_error_participants'));
       return;
     }
 
@@ -109,8 +111,8 @@ export default function SetupScreen() {
                 <FishIcon width={48} height={24} color={Colors.icyBlue} opacity={0.8} />
                 <Snowflake color={Colors.icyBlue} size={16} style={styles.snowflake} />
               </View>
-              <Text style={styles.title}>ワカサギダービー</Text>
-              <Text style={styles.subtitle}>冬の湖で、仲間と釣果を競おう</Text>
+              <Text style={styles.title}>{t('setup_title')}</Text>
+              <Text style={styles.subtitle}>{t('setup_subtitle')}</Text>
             </Animated.View>
 
             <Animated.View
@@ -120,13 +122,13 @@ export default function SetupScreen() {
               ]}
             >
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>イベント名</Text>
+                <Text style={styles.label}>{t('setup_event_name_label')}</Text>
                 <View style={styles.inputWrapper}>
                   <TextInput
                     style={styles.input}
                     value={eventName}
                     onChangeText={setEventName}
-                    placeholder="例: 2024冬の陣"
+                    placeholder={t('setup_event_name_placeholder')}
                     placeholderTextColor={Colors.textMuted}
                     testID="event-name-input"
                   />
@@ -136,14 +138,14 @@ export default function SetupScreen() {
               <View style={styles.inputGroup}>
                 <View style={styles.labelRow}>
                   <MapPin color={Colors.icyBlue} size={14} />
-                  <Text style={styles.label}>場所</Text>
+                  <Text style={styles.label}>{t('setup_location_label')}</Text>
                 </View>
                 <View style={styles.inputWrapper}>
                   <TextInput
                     style={styles.input}
                     value={location}
                     onChangeText={setLocation}
-                    placeholder="例: 諏訪湖"
+                    placeholder={t('setup_location_placeholder')}
                     placeholderTextColor={Colors.textMuted}
                     testID="location-input"
                   />
@@ -153,7 +155,7 @@ export default function SetupScreen() {
               <View style={styles.inputGroup}>
                 <View style={styles.labelRow}>
                   <Users color={Colors.icyBlue} size={14} />
-                  <Text style={styles.label}>参加者</Text>
+                  <Text style={styles.label}>{t('setup_participants_label')}</Text>
                 </View>
                 {participants.map((p, index) => (
                   <View key={index} style={styles.participantRow}>
@@ -173,7 +175,7 @@ export default function SetupScreen() {
                         style={[styles.input, styles.participantTextInput]}
                         value={p}
                         onChangeText={(val) => updateParticipant(index, val)}
-                        placeholder={`参加者 ${index + 1}`}
+                        placeholder={t('setup_participant_placeholder', { number: index + 1 })}
                         placeholderTextColor={Colors.textMuted}
                         testID={`participant-input-${index}`}
                       />
@@ -195,7 +197,7 @@ export default function SetupScreen() {
                   testID="add-participant"
                 >
                   <Plus color={Colors.icyBlue} size={18} />
-                  <Text style={styles.addBtnText}>参加者を追加</Text>
+                  <Text style={styles.addBtnText}>{t('setup_add_participant')}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -207,7 +209,7 @@ export default function SetupScreen() {
                 activeOpacity={0.8}
                 testID="start-derby"
               >
-                <Text style={styles.startBtnText}>ダービー開始</Text>
+                <Text style={styles.startBtnText}>{t('setup_start_btn')}</Text>
                 <ChevronRight color="#FFF" size={20} />
               </TouchableOpacity>
             </Animated.View>

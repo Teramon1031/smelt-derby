@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 interface WeatherData {
   temperature: number | null;
@@ -60,6 +61,7 @@ async function fetchTemperature(lat: number, lon: number): Promise<number | null
 }
 
 export function useWeather(): WeatherData {
+  const { t } = useTranslation();
   const [temperature, setTemperature] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +74,7 @@ export function useWeather(): WeatherData {
         const loc = await getLocation();
         if (cancelled) return;
         if (!loc) {
-          setError('位置情報を取得できませんでした');
+          setError(t('weather_error_location'));
           setIsLoading(false);
           return;
         }
@@ -81,10 +83,10 @@ export function useWeather(): WeatherData {
         if (temp !== null) {
           setTemperature(temp);
         } else {
-          setError('気温を取得できませんでした');
+          setError(t('weather_error_temperature'));
         }
       } catch {
-        if (!cancelled) setError('気温の取得に失敗しました');
+        if (!cancelled) setError(t('weather_error_fetch'));
       } finally {
         if (!cancelled) setIsLoading(false);
       }

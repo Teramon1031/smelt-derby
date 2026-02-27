@@ -5,6 +5,7 @@ import React, { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DerbyProvider } from '@/contexts/DerbyContext';
 import Colors from '@/constants/colors';
+import '@/i18n';
 
 SplashScreen.preventAutoHideAsync();
 

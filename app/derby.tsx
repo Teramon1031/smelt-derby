@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MapPin, Minus, UserCircle, Thermometer } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import Colors from '@/constants/colors';
 import { useDerby } from '@/contexts/DerbyContext';
 import FloatingFishDecor from '@/components/FloatingFishDecor';
@@ -357,6 +358,7 @@ export default function DerbyScreen() {
     getCatchCount,
   } = useDerby();
 
+  const { t } = useTranslation();
   const { temperature, isLoading: weatherLoading } = useWeather();
   const [iconModalVisible, setIconModalVisible] = useState(false);
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
@@ -418,12 +420,12 @@ export default function DerbyScreen() {
 
   const handleEndDerby = useCallback(() => {
     Alert.alert(
-      'ダービー終了',
-      '本当にダービーを終了しますか？結果発表に進みます。',
+      t('derby_confirm_title'),
+      t('derby_confirm_message'),
       [
-        { text: 'キャンセル', style: 'cancel' },
+        { text: t('derby_cancel'), style: 'cancel' },
         {
-          text: '終了して結果へ',
+          text: t('derby_confirm_end'),
           onPress: () => {
             const derbyId = activeDerby?.id;
             isEndingRef.current = true;
@@ -474,13 +476,13 @@ export default function DerbyScreen() {
           <Animated.View style={[styles.totalBubble, { transform: [{ scale: totalBounce }] }]}>
             <Text style={styles.totalFishEmoji}>🐟</Text>
             <Text style={styles.totalNumber}>{totalCatchCount}</Text>
-            <Text style={styles.totalLabel}>匹</Text>
+            <Text style={styles.totalLabel}>{t('derby_unit')}</Text>
           </Animated.View>
         </View>
 
         <View style={styles.hintBar}>
           <View style={styles.hintPill}>
-            <Text style={styles.hintText}>🐟 ← タップで +1 ！</Text>
+            <Text style={styles.hintText}>{t('derby_hint')}</Text>
           </View>
         </View>
 
@@ -519,7 +521,7 @@ export default function DerbyScreen() {
           activeOpacity={0.7}
           testID="end-derby"
         >
-          <Text style={styles.endFabText}>終了！</Text>
+          <Text style={styles.endFabText}>{t('derby_end_btn')}</Text>
         </TouchableOpacity>
 
         <Modal
@@ -536,7 +538,7 @@ export default function DerbyScreen() {
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>
-                  {selectedParticipant?.name ?? ''} のアイコン
+                  {t('derby_icon_modal_title', { name: selectedParticipant?.name ?? '' })}
                 </Text>
                 <View style={styles.modalFishDecor}>
                   <FishIcon width={40} height={20} color={Colors.icyBlue} opacity={0.3} comical />

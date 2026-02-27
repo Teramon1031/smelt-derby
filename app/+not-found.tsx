@@ -1,15 +1,17 @@
 import { Link, Stack } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Colors from '@/constants/colors';
 
 export default function NotFoundScreen() {
+  const { t } = useTranslation();
   return (
     <>
-      <Stack.Screen options={{ title: 'ページが見つかりません' }} />
+      <Stack.Screen options={{ title: t('not_found_title') }} />
       <View style={styles.container}>
-        <Text style={styles.title}>このページは存在しません</Text>
+        <Text style={styles.title}>{t('not_found_message')}</Text>
         <Link href="/" style={styles.link}>
-          <Text style={styles.linkText}>ホームに戻る</Text>
+          <Text style={styles.linkText}>{t('not_found_home')}</Text>
         </Link>
       </View>
     </>

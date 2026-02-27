@@ -11,6 +11,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Trophy, Home, Fish } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import Colors from '@/constants/colors';
 import { useDerby } from '@/contexts/DerbyContext';
 import FishIcon from '@/components/FishIcon';
@@ -186,6 +187,7 @@ function ConfettiParticle({ delay, startX }: { delay: number; startX: number }) 
 
 export default function ResultsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { derbyId } = useLocalSearchParams<{ derbyId: string }>();
   const { derbies } = useDerby();
   const titleFade = useRef(new Animated.Value(0)).current;
@@ -280,11 +282,11 @@ export default function ResultsScreen() {
         >
           <Animated.View style={[styles.titleArea, { opacity: titleFade, transform: [{ scale: titleScale }] }]}>
             <Trophy color={Colors.warmAmber} size={32} />
-            <Text style={styles.title}>結果発表</Text>
+            <Text style={styles.title}>{t('results_title')}</Text>
             <Text style={styles.subtitle}>{derby.name}</Text>
             <View style={styles.totalRow}>
               <Fish color={Colors.icyBlue} size={16} />
-              <Text style={styles.totalText}>合計 {totalCatch} 匹</Text>
+              <Text style={styles.totalText}>{t('results_total', { count: totalCatch })}</Text>
             </View>
           </Animated.View>
 
@@ -306,7 +308,7 @@ export default function ResultsScreen() {
           </View>
 
           <Animated.View style={[styles.fullRankingArea, { opacity: listFade }]}>
-            <Text style={styles.sectionTitle}>全順位</Text>
+            <Text style={styles.sectionTitle}>{t('results_ranking_section')}</Text>
             {rankings.map((entry, index) => (
               <View
                 key={entry.id}
@@ -336,7 +338,7 @@ export default function ResultsScreen() {
                 <View style={styles.rankCountArea}>
                   <FishIcon width={18} height={11} color={entry.color} opacity={0.7} comical />
                   <Text style={[styles.rankCount, { color: entry.color }]}>{entry.count}</Text>
-                  <Text style={styles.rankUnit}>匹</Text>
+                  <Text style={styles.rankUnit}>{t('results_unit')}</Text>
                 </View>
               </View>
             ))}
@@ -350,7 +352,7 @@ export default function ResultsScreen() {
               testID="go-home"
             >
               <Home color="#FFF" size={18} />
-              <Text style={styles.homeButtonText}>ホームに戻る</Text>
+              <Text style={styles.homeButtonText}>{t('results_home_btn')}</Text>
             </TouchableOpacity>
           </Animated.View>
         </ScrollView>
