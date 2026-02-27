@@ -8,22 +8,21 @@ import {
   Dimensions,
   Animated,
   Modal,
-  TextInput,
   Alert,
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MapPin, Trophy, Minus, Square, UserCircle } from 'lucide-react-native';
+import { MapPin, Minus, UserCircle, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useDerby } from '@/contexts/DerbyContext';
-import MountainBackground from '@/components/MountainBackground';
+import FloatingFishDecor from '@/components/FloatingFishDecor';
 import FishIcon from '@/components/FishIcon';
 import type { Participant } from '@/types/derby';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const BAR_AREA_WIDTH = SCREEN_WIDTH - 130;
+const BAR_AREA_WIDTH = SCREEN_WIDTH - 140;
 
 const EMOJI_OPTIONS = [
   '🎣', '🐟', '⛄', '🏔️', '🌊', '❄️', '🔥', '⭐',
@@ -31,11 +30,53 @@ const EMOJI_OPTIONS = [
   '😎', '🤠', '👑', '💪', '🎯', '🏆', '🍺', '☕',
 ];
 
-function WakasagiFishTip({ color, size = 28 }: { color: string; size?: number }) {
+function ComicalFishTip({ color, size = 36 }: { color: string; size?: number }) {
   return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <FishIcon width={size} height={size * 0.6} color={color} opacity={1} />
+    <View style={{ width: size * 1.2, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <FishIcon width={size * 1.2} height={size * 0.7} color={color} opacity={1} comical />
     </View>
+  );
+}
+
+function SplashEffect({ visible }: { visible: boolean }) {
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (visible) {
+      scaleAnim.setValue(0);
+      opacityAnim.setValue(1);
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 4,
+          tension: 80,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 600,
+          delay: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
+  return (
+    <Animated.View
+      style={{
+        position: 'absolute',
+        right: -8,
+        top: -8,
+        opacity: opacityAnim,
+        transform: [{ scale: scaleAnim }],
+      }}
+    >
+      <Text style={{ fontSize: 16 }}>💧</Text>
+    </Animated.View>
   );
 }
 
@@ -52,33 +93,53 @@ interface BarRowProps {
 function BarRow({ participant, count, maxCount, rank, onTapFish, onLongPress, onIconPress }: BarRowProps) {
   const barWidth = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const bounceAnim = useRef(new Animated.Value(0)).current;
   const prevCountRef = useRef(count);
+  const [showSplash, setShowSplash] = useState(false);
 
   const targetWidth = useMemo(() => {
-    if (maxCount === 0) return 20;
-    return Math.max(20, (count / Math.max(maxCount, 1)) * (BAR_AREA_WIDTH - 40));
+    if (maxCount === 0) return 24;
+    return Math.max(24, (count / Math.max(maxCount, 1)) * (BAR_AREA_WIDTH - 50));
   }, [count, maxCount]);
 
   useEffect(() => {
     Animated.spring(barWidth, {
       toValue: targetWidth,
-      friction: 8,
-      tension: 40,
+      friction: 7,
+      tension: 50,
       useNativeDriver: false,
     }).start();
   }, [targetWidth]);
 
   useEffect(() => {
     if (count > prevCountRef.current) {
+      setShowSplash(true);
+      setTimeout(() => setShowSplash(false), 800);
+
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 1.15,
+          toValue: 1.25,
+          duration: 80,
+          useNativeDriver: true,
+        }),
+        Animated.spring(pulseAnim, {
+          toValue: 1,
+          friction: 3,
+          tension: 120,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      Animated.sequence([
+        Animated.timing(bounceAnim, {
+          toValue: -6,
           duration: 100,
           useNativeDriver: true,
         }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 150,
+        Animated.spring(bounceAnim, {
+          toValue: 0,
+          friction: 3,
+          tension: 100,
           useNativeDriver: true,
         }),
       ]).start();
@@ -100,22 +161,31 @@ function BarRow({ participant, count, maxCount, rank, onTapFish, onLongPress, on
     }
   }, [onLongPress]);
 
-  const rankBadge = rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : `${rank}`;
+  const rankBadge = rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : null;
+  const isLeader = rank === 1 && count > 0;
 
   return (
-    <View style={barStyles.row}>
+    <Animated.View style={[barStyles.row, { transform: [{ translateY: bounceAnim }] }]}>
       <View style={barStyles.leftSection}>
         <TouchableOpacity onPress={onIconPress} style={barStyles.iconBtn} testID={`icon-btn-${participant.id}`}>
-          {participant.icon ? (
-            <Text style={barStyles.iconEmoji}>{participant.icon}</Text>
-          ) : (
-            <UserCircle color={participant.color} size={24} />
-          )}
+          <View style={[barStyles.iconCircle, { borderColor: participant.color + '60' }]}>
+            {participant.icon ? (
+              <Text style={barStyles.iconEmoji}>{participant.icon}</Text>
+            ) : (
+              <UserCircle color={participant.color} size={22} />
+            )}
+          </View>
         </TouchableOpacity>
         <View style={barStyles.nameArea}>
-          <Text style={barStyles.name} numberOfLines={1}>{participant.name}</Text>
+          <View style={barStyles.nameRow}>
+            {rankBadge ? <Text style={barStyles.rankEmoji}>{rankBadge}</Text> : null}
+            <Text style={[barStyles.name, isLeader && barStyles.leaderName]} numberOfLines={1}>
+              {participant.name}
+            </Text>
+          </View>
         </View>
       </View>
+
       <View style={barStyles.barArea}>
         <View style={barStyles.barTrack}>
           <Animated.View
@@ -127,33 +197,32 @@ function BarRow({ participant, count, maxCount, rank, onTapFish, onLongPress, on
               },
             ]}
           >
+            <View style={barStyles.barShine} />
             <Text style={barStyles.countInBar}>{count}</Text>
           </Animated.View>
-          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+          <Animated.View style={[barStyles.fishContainer, { transform: [{ scale: pulseAnim }] }]}>
             <TouchableOpacity
               onPress={handlePress}
-              activeOpacity={0.6}
+              activeOpacity={0.5}
               testID={`fish-tap-${participant.id}`}
               style={barStyles.fishTapArea}
             >
-              <WakasagiFishTip color={participant.color} size={32} />
+              <ComicalFishTip color={participant.color} size={34} />
+              <SplashEffect visible={showSplash} />
             </TouchableOpacity>
           </Animated.View>
         </View>
-        <View style={barStyles.actions}>
-          {count > 0 && (
-            <TouchableOpacity
-              onPress={handleDecrementPress}
-              style={barStyles.decrementBtn}
-              testID={`decrement-${participant.id}`}
-            >
-              <Minus color={Colors.textMuted} size={14} />
-            </TouchableOpacity>
-          )}
-          <Text style={barStyles.rankText}>{rankBadge}</Text>
-        </View>
+        {count > 0 && (
+          <TouchableOpacity
+            onPress={handleDecrementPress}
+            style={barStyles.decrementBtn}
+            testID={`decrement-${participant.id}`}
+          >
+            <Minus color="rgba(255,255,255,0.4)" size={12} />
+          </TouchableOpacity>
+        )}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -161,70 +230,106 @@ const barStyles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 12,
-    gap: 8,
+    marginHorizontal: 8,
+    marginVertical: 4,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.04)',
   },
   leftSection: {
-    width: 80,
+    width: 90,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
   iconBtn: {
-    width: 28,
-    height: 28,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  iconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+  },
   iconEmoji: {
-    fontSize: 20,
+    fontSize: 18,
   },
   nameArea: {
     flex: 1,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  rankEmoji: {
+    fontSize: 12,
   },
   name: {
     color: Colors.textPrimary,
     fontSize: 13,
     fontWeight: '600' as const,
   },
+  leaderName: {
+    color: Colors.warmAmber,
+  },
   barArea: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 4,
   },
   barTrack: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    height: 32,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 8,
+    height: 36,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 18,
     overflow: 'visible',
   },
   barFill: {
-    height: 32,
-    borderRadius: 8,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'flex-end',
-    paddingRight: 8,
-    minWidth: 20,
+    paddingRight: 10,
+    minWidth: 24,
+    overflow: 'hidden',
+  },
+  barShine: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 14,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.15)',
   },
   countInBar: {
     color: '#FFF',
-    fontSize: 12,
-    fontWeight: '700' as const,
-    textShadowColor: 'rgba(0,0,0,0.3)',
+    fontSize: 13,
+    fontWeight: '800' as const,
+    textShadowColor: 'rgba(0,0,0,0.4)',
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 3,
+  },
+  fishContainer: {
+    marginLeft: -6,
   },
   fishTapArea: {
-    padding: 4,
-    marginLeft: -4,
-  },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 4,
+    padding: 6,
+    position: 'relative',
   },
   decrementBtn: {
     width: 24,
@@ -233,10 +338,7 @@ const barStyles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.06)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  rankText: {
-    fontSize: 12,
-    color: Colors.textMuted,
+    marginLeft: 4,
   },
 });
 
@@ -244,7 +346,6 @@ export default function DerbyScreen() {
   const router = useRouter();
   const {
     activeDerby,
-    rankings,
     totalCatchCount,
     incrementCatch,
     decrementCatch,
@@ -255,12 +356,32 @@ export default function DerbyScreen() {
 
   const [iconModalVisible, setIconModalVisible] = useState(false);
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
+  const totalBounce = useRef(new Animated.Value(1)).current;
+  const prevTotal = useRef(totalCatchCount);
 
   useEffect(() => {
     if (!activeDerby) {
       router.replace('/');
     }
   }, [activeDerby]);
+
+  useEffect(() => {
+    if (totalCatchCount > prevTotal.current) {
+      Animated.sequence([
+        Animated.timing(totalBounce, {
+          toValue: 1.2,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.spring(totalBounce, {
+          toValue: 1,
+          friction: 4,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+    prevTotal.current = totalCatchCount;
+  }, [totalCatchCount]);
 
   const maxCount = useMemo(() => {
     if (!activeDerby) return 0;
@@ -314,34 +435,42 @@ export default function DerbyScreen() {
 
   return (
     <View style={styles.root}>
-      <MountainBackground />
+      <View style={styles.bgGradientTop} />
+      <View style={styles.bgGradientBottom} />
+      <FloatingFishDecor />
+
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <View style={styles.topBar}>
-          <View style={styles.eventInfo}>
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
             <Text style={styles.eventName} numberOfLines={1}>{activeDerby.name}</Text>
             {activeDerby.location ? (
               <View style={styles.locationRow}>
-                <MapPin color={Colors.textMuted} size={12} />
+                <MapPin color={Colors.icyBlue} size={11} />
                 <Text style={styles.locationText}>{activeDerby.location}</Text>
               </View>
             ) : null}
           </View>
-          <View style={styles.totalBadge}>
-            <Trophy color={Colors.warmAmber} size={14} />
-            <Text style={styles.totalText}>{totalCatchCount}</Text>
+
+          <Animated.View style={[styles.totalBubble, { transform: [{ scale: totalBounce }] }]}>
+            <Text style={styles.totalFishEmoji}>🐟</Text>
+            <Text style={styles.totalNumber}>{totalCatchCount}</Text>
+            <Text style={styles.totalLabel}>匹</Text>
+          </Animated.View>
+        </View>
+
+        <View style={styles.hintBar}>
+          <View style={styles.hintPill}>
+            <Text style={styles.hintText}>🐟 ← タップで +1 ！</Text>
           </View>
         </View>
 
-        <Text style={styles.hintText}>🐟 ← タップで+1</Text>
-
-        <ScrollView style={styles.flex} contentContainerStyle={styles.listContent}>
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        >
           {sortedParticipants.map((participant, index) => {
             const count = getCatchCount(participant.id);
-            const rank = sortedParticipants.findIndex(
-              p => getCatchCount(p.id) >= count && p.id !== participant.id
-            ) === -1
-              ? index + 1
-              : index + 1;
             return (
               <BarRow
                 key={participant.id}
@@ -355,16 +484,23 @@ export default function DerbyScreen() {
               />
             );
           })}
+
+          <View style={styles.waterLine}>
+            <View style={styles.waveDot} />
+            <View style={[styles.waveDot, { width: 30, opacity: 0.15 }]} />
+            <View style={[styles.waveDot, { width: 16, opacity: 0.08 }]} />
+            <View style={[styles.waveDot, { width: 24, opacity: 0.12 }]} />
+          </View>
         </ScrollView>
 
         <View style={styles.bottomBar}>
           <TouchableOpacity
             style={styles.endBtn}
             onPress={handleEndDerby}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
             testID="end-derby"
           >
-            <Square color={Colors.danger} size={16} />
+            <X color="#FFF" size={16} />
             <Text style={styles.endBtnText}>ダービー終了</Text>
           </TouchableOpacity>
         </View>
@@ -381,9 +517,14 @@ export default function DerbyScreen() {
             onPress={() => setIconModalVisible(false)}
           >
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>
-                {selectedParticipant?.name ?? ''} のアイコン
-              </Text>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  {selectedParticipant?.name ?? ''} のアイコン
+                </Text>
+                <View style={styles.modalFishDecor}>
+                  <FishIcon width={40} height={20} color={Colors.icyBlue} opacity={0.3} comical />
+                </View>
+              </View>
               <View style={styles.emojiGrid}>
                 {EMOJI_OPTIONS.map((emoji) => (
                   <TouchableOpacity
@@ -409,7 +550,25 @@ export default function DerbyScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: Colors.deepNavy,
+    backgroundColor: '#0B1520',
+  },
+  bgGradientTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 200,
+    backgroundColor: '#0E1D2E',
+    opacity: 0.8,
+  },
+  bgGradientBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 200,
+    backgroundColor: '#0A1824',
+    opacity: 0.6,
   },
   safe: {
     flex: 1,
@@ -417,62 +576,98 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  topBar: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
+    paddingTop: 8,
+    paddingBottom: 12,
   },
-  eventInfo: {
+  headerLeft: {
     flex: 1,
     marginRight: 12,
   },
   eventName: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    color: Colors.textPrimary,
+    fontSize: 20,
+    fontWeight: '800' as const,
+    color: '#FFF',
+    letterSpacing: -0.3,
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 2,
+    marginTop: 4,
   },
   locationText: {
     fontSize: 12,
-    color: Colors.textMuted,
+    color: Colors.icyBlue,
+    opacity: 0.7,
   },
-  totalBadge: {
+  totalBubble: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(232,168,56,0.12)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    gap: 4,
+    backgroundColor: 'rgba(168,213,226,0.12)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: 'rgba(168,213,226,0.15)',
   },
-  totalText: {
+  totalFishEmoji: {
     fontSize: 16,
-    fontWeight: '700' as const,
-    color: Colors.warmAmber,
+  },
+  totalNumber: {
+    fontSize: 22,
+    fontWeight: '900' as const,
+    color: '#FFF',
+  },
+  totalLabel: {
+    fontSize: 11,
+    color: Colors.icyBlue,
+    fontWeight: '600' as const,
+    marginTop: 4,
+  },
+  hintBar: {
+    alignItems: 'center',
+    paddingBottom: 8,
+  },
+  hintPill: {
+    backgroundColor: 'rgba(168,213,226,0.08)',
+    paddingHorizontal: 16,
+    paddingVertical: 5,
+    borderRadius: 12,
   },
   hintText: {
     fontSize: 11,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    paddingVertical: 8,
+    color: Colors.icyBlue,
+    fontWeight: '500' as const,
+    opacity: 0.6,
   },
   listContent: {
-    paddingBottom: 20,
+    paddingTop: 4,
+    paddingBottom: 24,
+  },
+  waterLine: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+    paddingTop: 20,
+    paddingBottom: 8,
+  },
+  waveDot: {
+    width: 20,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: Colors.icyBlue,
+    opacity: 0.1,
   },
   bottomBar: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.06)',
   },
   endBtn: {
     flexDirection: 'row',
@@ -480,36 +675,45 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: 'rgba(232,84,84,0.1)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(232,84,84,0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(232,84,84,0.2)',
+    borderColor: 'rgba(232,84,84,0.25)',
   },
   endBtnText: {
-    color: Colors.danger,
-    fontSize: 15,
-    fontWeight: '600' as const,
+    color: '#E85454',
+    fontSize: 14,
+    fontWeight: '700' as const,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
     width: SCREEN_WIDTH - 48,
-    backgroundColor: Colors.navy,
-    borderRadius: 20,
+    backgroundColor: '#162232',
+    borderRadius: 24,
     padding: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(168,213,226,0.12)',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 20,
   },
   modalTitle: {
     fontSize: 16,
     fontWeight: '700' as const,
-    color: Colors.textPrimary,
+    color: '#FFF',
     textAlign: 'center',
-    marginBottom: 20,
+  },
+  modalFishDecor: {
+    opacity: 0.6,
   },
   emojiGrid: {
     flexDirection: 'row',
@@ -520,8 +724,8 @@ const styles = StyleSheet.create({
   emojiBtn: {
     width: 48,
     height: 48,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
   },
