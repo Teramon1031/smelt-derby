@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MapPin, Minus, UserCircle, X, Square } from 'lucide-react-native';
+import { MapPin, Minus, UserCircle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useDerby } from '@/contexts/DerbyContext';
@@ -30,366 +30,7 @@ const EMOJI_OPTIONS = [
   '😎', '🤠', '👑', '💪', '🎯', '🏆', '🍺', '☕',
 ];
 
-const CELEBRATION_EMOJIS = ['🐟', '💧', '⭐', '✨', '🫧', '❄️', '🎣', '💫', '🐡', '🦐'];
 
-type CelebrationPattern = 'bubbleRise' | 'fishRain' | 'starBurst' | 'rippleWave' | 'confettiPop';
-
-const PATTERNS: CelebrationPattern[] = ['bubbleRise', 'fishRain', 'starBurst', 'rippleWave', 'confettiPop'];
-
-interface CelebrationParticle {
-  id: string;
-  emoji: string;
-  startX: number;
-  startY: number;
-  animX: Animated.Value;
-  animY: Animated.Value;
-  animOpacity: Animated.Value;
-  animScale: Animated.Value;
-  animRotate: Animated.Value;
-  size: number;
-}
-
-let celebrationCounter = 0;
-
-function useCelebration() {
-  const [particles, setParticles] = useState<CelebrationParticle[]>([]);
-  const patternIndexRef = useRef(0);
-
-  const triggerCelebration = useCallback(() => {
-    const pattern = PATTERNS[patternIndexRef.current % PATTERNS.length];
-    patternIndexRef.current++;
-
-    const newParticles: CelebrationParticle[] = [];
-    const count = pattern === 'confettiPop' ? 18 : pattern === 'starBurst' ? 14 : 10;
-
-    for (let i = 0; i < count; i++) {
-      const id = `cel-${celebrationCounter++}`;
-      const particle: CelebrationParticle = {
-        id,
-        emoji: CELEBRATION_EMOJIS[Math.floor(Math.random() * CELEBRATION_EMOJIS.length)],
-        startX: 0,
-        startY: 0,
-        animX: new Animated.Value(0),
-        animY: new Animated.Value(0),
-        animOpacity: new Animated.Value(1),
-        animScale: new Animated.Value(0),
-        animRotate: new Animated.Value(0),
-        size: 18 + Math.random() * 18,
-      };
-
-      switch (pattern) {
-        case 'bubbleRise': {
-          particle.emoji = ['🫧', '💧', '✨', '🐟', '❄️'][Math.floor(Math.random() * 5)];
-          particle.startX = Math.random() * SCREEN_WIDTH;
-          particle.startY = SCREEN_HEIGHT + 20;
-          break;
-        }
-        case 'fishRain': {
-          particle.emoji = ['🐟', '🐡', '🦐', '🐠', '🎣'][Math.floor(Math.random() * 5)];
-          particle.startX = Math.random() * SCREEN_WIDTH;
-          particle.startY = -40;
-          break;
-        }
-        case 'starBurst': {
-          particle.emoji = ['⭐', '✨', '💫', '🌟', '❄️'][Math.floor(Math.random() * 5)];
-          particle.startX = SCREEN_WIDTH / 2;
-          particle.startY = SCREEN_HEIGHT / 2;
-          break;
-        }
-        case 'rippleWave': {
-          particle.emoji = ['🌊', '💧', '🫧', '🐟', '💦'][Math.floor(Math.random() * 5)];
-          const angle = (i / count) * Math.PI * 2;
-          particle.startX = SCREEN_WIDTH / 2 + Math.cos(angle) * 20;
-          particle.startY = SCREEN_HEIGHT / 2 + Math.sin(angle) * 20;
-          break;
-        }
-        case 'confettiPop': {
-          particle.emoji = ['🐟', '✨', '⭐', '❄️', '🫧', '💧', '🎣', '🐡'][Math.floor(Math.random() * 8)];
-          particle.startX = SCREEN_WIDTH * (0.2 + Math.random() * 0.6);
-          particle.startY = -20;
-          break;
-        }
-      }
-
-      newParticles.push(particle);
-    }
-
-    setParticles(prev => [...prev, ...newParticles]);
-
-    newParticles.forEach((particle, i) => {
-      const delay = i * (pattern === 'confettiPop' ? 30 : pattern === 'bubbleRise' ? 60 : 40);
-      const duration = pattern === 'starBurst' ? 700 : pattern === 'confettiPop' ? 1400 : 1100;
-
-      setTimeout(() => {
-        switch (pattern) {
-          case 'bubbleRise': {
-            const drift = (Math.random() - 0.5) * 120;
-            Animated.parallel([
-              Animated.timing(particle.animY, {
-                toValue: -(SCREEN_HEIGHT + 60),
-                duration: 1200 + Math.random() * 600,
-                useNativeDriver: true,
-              }),
-              Animated.timing(particle.animX, {
-                toValue: drift,
-                duration: 1200 + Math.random() * 600,
-                useNativeDriver: true,
-              }),
-              Animated.sequence([
-                Animated.spring(particle.animScale, {
-                  toValue: 1 + Math.random() * 0.5,
-                  friction: 4,
-                  tension: 80,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(particle.animScale, {
-                  toValue: 0.3,
-                  duration: 400,
-                  useNativeDriver: true,
-                }),
-              ]),
-              Animated.timing(particle.animOpacity, {
-                toValue: 0,
-                duration: 1400,
-                useNativeDriver: true,
-              }),
-              Animated.timing(particle.animRotate, {
-                toValue: (Math.random() - 0.5) * 4,
-                duration: 1400,
-                useNativeDriver: true,
-              }),
-            ]).start();
-            break;
-          }
-          case 'fishRain': {
-            const wobble = (Math.random() - 0.5) * 80;
-            Animated.parallel([
-              Animated.timing(particle.animY, {
-                toValue: SCREEN_HEIGHT + 60,
-                duration: 1400 + Math.random() * 400,
-                useNativeDriver: true,
-              }),
-              Animated.sequence([
-                Animated.timing(particle.animX, {
-                  toValue: wobble,
-                  duration: 400,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(particle.animX, {
-                  toValue: -wobble * 0.6,
-                  duration: 500,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(particle.animX, {
-                  toValue: wobble * 0.3,
-                  duration: 500,
-                  useNativeDriver: true,
-                }),
-              ]),
-              Animated.sequence([
-                Animated.timing(particle.animScale, {
-                  toValue: 1.2,
-                  duration: 200,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(particle.animScale, {
-                  toValue: 0.8 + Math.random() * 0.4,
-                  duration: 600,
-                  useNativeDriver: true,
-                }),
-              ]),
-              Animated.timing(particle.animOpacity, {
-                toValue: 0,
-                duration: 1600,
-                delay: 200,
-                useNativeDriver: true,
-              }),
-              Animated.timing(particle.animRotate, {
-                toValue: (Math.random() - 0.5) * 6,
-                duration: 1600,
-                useNativeDriver: true,
-              }),
-            ]).start();
-            break;
-          }
-          case 'starBurst': {
-            const angle = (i / newParticles.length) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
-            const dist = 120 + Math.random() * 140;
-            Animated.parallel([
-              Animated.timing(particle.animX, {
-                toValue: Math.cos(angle) * dist,
-                duration,
-                useNativeDriver: true,
-              }),
-              Animated.timing(particle.animY, {
-                toValue: Math.sin(angle) * dist,
-                duration,
-                useNativeDriver: true,
-              }),
-              Animated.sequence([
-                Animated.spring(particle.animScale, {
-                  toValue: 1.6,
-                  friction: 4,
-                  tension: 120,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(particle.animScale, {
-                  toValue: 0,
-                  duration: 300,
-                  useNativeDriver: true,
-                }),
-              ]),
-              Animated.timing(particle.animOpacity, {
-                toValue: 0,
-                duration: duration + 100,
-                useNativeDriver: true,
-              }),
-              Animated.timing(particle.animRotate, {
-                toValue: Math.random() * 8,
-                duration,
-                useNativeDriver: true,
-              }),
-            ]).start();
-            break;
-          }
-          case 'rippleWave': {
-            const ang = (i / newParticles.length) * Math.PI * 2;
-            const radius = 100 + Math.random() * 120;
-            Animated.parallel([
-              Animated.timing(particle.animX, {
-                toValue: Math.cos(ang) * radius,
-                duration: 900,
-                useNativeDriver: true,
-              }),
-              Animated.timing(particle.animY, {
-                toValue: Math.sin(ang) * radius,
-                duration: 900,
-                useNativeDriver: true,
-              }),
-              Animated.sequence([
-                Animated.spring(particle.animScale, {
-                  toValue: 1.4,
-                  friction: 3,
-                  tension: 100,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(particle.animScale, {
-                  toValue: 0,
-                  duration: 300,
-                  useNativeDriver: true,
-                }),
-              ]),
-              Animated.timing(particle.animOpacity, {
-                toValue: 0,
-                duration: 1000,
-                useNativeDriver: true,
-              }),
-              Animated.timing(particle.animRotate, {
-                toValue: (Math.random() - 0.5) * 3,
-                duration: 1000,
-                useNativeDriver: true,
-              }),
-            ]).start();
-            break;
-          }
-          case 'confettiPop': {
-            const swayAmount = (Math.random() - 0.5) * 200;
-            Animated.parallel([
-              Animated.timing(particle.animY, {
-                toValue: SCREEN_HEIGHT + 40,
-                duration: 1400 + Math.random() * 800,
-                useNativeDriver: true,
-              }),
-              Animated.sequence([
-                Animated.timing(particle.animX, {
-                  toValue: swayAmount,
-                  duration: 600,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(particle.animX, {
-                  toValue: -swayAmount * 0.5,
-                  duration: 700,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(particle.animX, {
-                  toValue: swayAmount * 0.3,
-                  duration: 500,
-                  useNativeDriver: true,
-                }),
-              ]),
-              Animated.sequence([
-                Animated.spring(particle.animScale, {
-                  toValue: 1 + Math.random() * 0.6,
-                  friction: 5,
-                  tension: 60,
-                  useNativeDriver: true,
-                }),
-              ]),
-              Animated.timing(particle.animOpacity, {
-                toValue: 0,
-                duration: 2000,
-                delay: 300,
-                useNativeDriver: true,
-              }),
-              Animated.timing(particle.animRotate, {
-                toValue: (Math.random() - 0.5) * 10,
-                duration: 2000,
-                useNativeDriver: true,
-              }),
-            ]).start();
-            break;
-          }
-        }
-      }, delay);
-    });
-
-    setTimeout(() => {
-      setParticles(prev => prev.filter(p => !newParticles.find(np => np.id === p.id)));
-    }, 2500);
-  }, []);
-
-  return { particles, triggerCelebration };
-}
-
-function CelebrationLayer({ particles }: { particles: CelebrationParticle[] }) {
-  if (particles.length === 0) return null;
-
-  return (
-    <View style={celebStyles.container} pointerEvents="none">
-      {particles.map((p) => (
-        <Animated.View
-          key={p.id}
-          style={{
-            position: 'absolute',
-            left: p.startX,
-            top: p.startY,
-            opacity: p.animOpacity,
-            transform: [
-              { translateX: p.animX },
-              { translateY: p.animY },
-              { scale: p.animScale },
-              {
-                rotate: p.animRotate.interpolate({
-                  inputRange: [-10, 10],
-                  outputRange: ['-360deg', '360deg'],
-                }),
-              },
-            ],
-          }}
-        >
-          <Text style={{ fontSize: p.size }}>{p.emoji}</Text>
-        </Animated.View>
-      ))}
-    </View>
-  );
-}
-
-const celebStyles = StyleSheet.create({
-  container: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 999,
-  },
-});
 
 function ComicalFishTip({ color, size = 36 }: { color: string; size?: number }) {
   return (
@@ -719,7 +360,6 @@ export default function DerbyScreen() {
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
   const totalBounce = useRef(new Animated.Value(1)).current;
   const prevTotal = useRef(totalCatchCount);
-  const { particles, triggerCelebration } = useCelebration();
 
   useEffect(() => {
     if (!activeDerby) {
@@ -776,25 +416,28 @@ export default function DerbyScreen() {
   const handleEndDerby = useCallback(() => {
     Alert.alert(
       'ダービー終了',
-      '本当にダービーを終了しますか？',
+      '本当にダービーを終了しますか？結果発表に進みます。',
       [
         { text: 'キャンセル', style: 'cancel' },
         {
-          text: '終了',
-          style: 'destructive',
+          text: '終了して結果へ',
           onPress: () => {
+            const derbyId = activeDerby?.id;
             endDerby();
-            router.replace('/');
+            if (derbyId) {
+              router.replace({ pathname: '/results', params: { derbyId } });
+            } else {
+              router.replace('/');
+            }
           },
         },
       ]
     );
-  }, [endDerby, router]);
+  }, [endDerby, router, activeDerby]);
 
-  const handleIncrementWithCelebration = useCallback((participantId: string) => {
+  const handleIncrement = useCallback((participantId: string) => {
     incrementCatch(participantId);
-    triggerCelebration();
-  }, [incrementCatch, triggerCelebration]);
+  }, [incrementCatch]);
 
   if (!activeDerby) return null;
 
@@ -845,7 +488,7 @@ export default function DerbyScreen() {
                 count={count}
                 maxCount={maxCount}
                 rank={index + 1}
-                onTapFish={() => handleIncrementWithCelebration(participant.id)}
+                onTapFish={() => handleIncrement(participant.id)}
                 onLongPress={() => decrementCatch(participant.id)}
                 onIconPress={() => handleOpenIconModal(participant.id)}
               />
@@ -866,7 +509,7 @@ export default function DerbyScreen() {
           activeOpacity={0.7}
           testID="end-derby"
         >
-          <Square color="#E85454" size={14} fill="#E85454" />
+          <Text style={styles.endFabText}>終了！</Text>
         </TouchableOpacity>
 
         <Modal
@@ -908,7 +551,6 @@ export default function DerbyScreen() {
         </Modal>
       </SafeAreaView>
 
-      <CelebrationLayer particles={particles} />
     </View>
   );
 }
@@ -1035,14 +677,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     bottom: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(232,84,84,0.12)',
+    backgroundColor: 'rgba(168,213,226,0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(232,84,84,0.25)',
+    borderColor: 'rgba(168,213,226,0.2)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  endFabText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: Colors.icyBlue,
+    opacity: 0.7,
   },
   modalOverlay: {
     flex: 1,
