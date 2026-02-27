@@ -9,7 +9,8 @@ const en = {
   setup_participants_label: 'Participants',
   setup_participant_placeholder: 'Participant {{number}}',
   setup_add_participant: 'Add Participant',
-  setup_start_btn: 'Start Derby',
+  setup_start_btn: 'One Device',
+  setup_start_sub: 'Manage everyone from this phone',
   setup_error_name: 'Please enter an event name',
   setup_error_participants: 'Please add at least 2 participants',
 
@@ -43,14 +44,21 @@ const en = {
   history_title: 'Past Derbies',
   history_total: 'Total: {{count}} fish',
   history_winner: 'Winner: {{name}}',
+  history_badge_local: 'This device only',
+  history_badge_online: 'Online',
 
-  // Weather hook errors
+  // Weather
+  weather_permission_title: 'Show local temperature',
+  weather_permission_message: 'Your current temperature will be shown on screen. Your location will never be uploaded to any server.',
+  weather_permission_allow: 'Allow',
+  weather_permission_deny: 'Skip',
   weather_error_location: 'Could not retrieve location',
   weather_error_temperature: 'Could not retrieve temperature',
   weather_error_fetch: 'Failed to fetch temperature',
 
   // Room (online mode)
-  room_create_btn: 'Create Online Room',
+  room_create_btn: 'Everyone Plays',
+  room_create_sub: 'Share a link so friends tap on their own phones',
   room_banner_label: 'Room Code',
   room_copy_link: 'Copy Link',
   room_copied: 'Copied!',

@@ -9,7 +9,8 @@ const ja = {
   setup_participants_label: '参加者',
   setup_participant_placeholder: '参加者 {{number}}',
   setup_add_participant: '参加者を追加',
-  setup_start_btn: 'ダービー開始',
+  setup_start_btn: '幹事が記録する',
+  setup_start_sub: 'このスマホ1台で全員分を管理',
   setup_error_name: 'イベント名を入力してください',
   setup_error_participants: '2人以上の参加者を入力してください',
 
@@ -43,14 +44,21 @@ const ja = {
   history_title: '過去のダービー',
   history_total: '合計 {{count}} 匹',
   history_winner: '優勝: {{name}}',
+  history_badge_local: 'このスマホのみ',
+  history_badge_online: 'オンライン',
 
-  // Weather hook errors
+  // Weather
+  weather_permission_title: '現在地の気温を表示します',
+  weather_permission_message: 'あなたの現在地の気温が表示されるようになります。位置情報がサーバーにアップロードされることはありません。',
+  weather_permission_allow: '許可する',
+  weather_permission_deny: 'スキップ',
   weather_error_location: '位置情報を取得できませんでした',
   weather_error_temperature: '気温を取得できませんでした',
   weather_error_fetch: '気温の取得に失敗しました',
 
   // Room (online mode)
-  room_create_btn: 'オンラインルームを作成',
+  room_create_btn: 'みんなで記録する',
+  room_create_sub: 'URLをシェアして各自のスマホから入力',
   room_banner_label: 'ルームコード',
   room_copy_link: 'リンクをコピー',
   room_copied: 'コピーしました！',

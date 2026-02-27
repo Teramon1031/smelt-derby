@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 interface WeatherData {
@@ -32,6 +32,22 @@ async function getLocation(): Promise<{ latitude: number; longitude: number } | 
 
   try {
     const Location = await import('expo-location');
+
+    // システムダイアログの前に説明を表示
+    const allowed = await new Promise<boolean>((resolve) => {
+      const { t } = require('i18next');
+      Alert.alert(
+        t('weather_permission_title'),
+        t('weather_permission_message'),
+        [
+          { text: t('weather_permission_deny'), style: 'cancel', onPress: () => resolve(false) },
+          { text: t('weather_permission_allow'), onPress: () => resolve(true) },
+        ],
+        { cancelable: true, onDismiss: () => resolve(false) }
+      );
+    });
+    if (!allowed) return null;
+
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       console.log('[Weather] Location permission denied');

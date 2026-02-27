@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MapPin, Users, Plus, X, ChevronRight, Snowflake, Globe } from 'lucide-react-native';
+import { MapPin, Users, Plus, X, Snowflake, Globe, Smartphone } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import Colors from '@/constants/colors';
 import { useDerby } from '@/contexts/DerbyContext';
@@ -37,20 +37,113 @@ function getDerbyStats(derby: Derby) {
   return { total, winner: counts[0] ?? null };
 }
 
+interface HistoryItem {
+  id: string;
+  type: 'local' | 'online';
+  name: string;
+  date: string;
+  location: string;
+  total: number;
+  winner: { name: string; color: string } | null;
+  sortKey: number;
+  // ローカル用
+  derbyId?: string;
+  // オンライン用
+  roomId?: string;
+}
+
 export default function SetupScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { activeDerby, createDerby, derbies } = useDerby();
 
-  const pastDerbies = useMemo(
-    () => [...derbies].filter(d => !d.isActive).sort((a, b) => b.createdAt - a.createdAt),
-    [derbies],
-  );
   const [eventName, setEventName] = useState('');
   const [location, setLocation] = useState('');
   const [participants, setParticipants] = useState<string[]>(['']);
   const [error, setError] = useState('');
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [pastRooms, setPastRooms] = useState<HistoryItem[]>([]);
+
+  // ローカルの過去ダービーをHistoryItem形式に変換
+  const localHistory = useMemo<HistoryItem[]>(() => {
+    return [...derbies]
+      .filter(d => !d.isActive)
+      .map(d => {
+        const { total, winner } = getDerbyStats(d);
+        return {
+          id: `local-${d.id}`,
+          type: 'local' as const,
+          name: d.name,
+          date: d.date,
+          location: d.location,
+          total,
+          winner,
+          sortKey: d.createdAt,
+          derbyId: d.id,
+        };
+      });
+  }, [derbies]);
+
+  // オンラインルームの過去分を Supabase から取得
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const sessionId = await getSessionId();
+        const { data: rooms } = await supabase
+          .from('rooms')
+          .select('*')
+          .eq('created_by', sessionId)
+          .eq('is_active', false)
+          .order('created_at', { ascending: false });
+
+        if (cancelled || !rooms || rooms.length === 0) return;
+
+        const roomIds = rooms.map((r: any) => r.room_id);
+        const { data: events } = await supabase
+          .from('catch_events')
+          .select('room_id, participant_id, delta')
+          .in('room_id', roomIds);
+
+        const items: HistoryItem[] = rooms.map((room: any) => {
+          const participants: { id: string; name: string; color: string }[] =
+            Array.isArray(room.participants) ? room.participants : JSON.parse(room.participants);
+          const roomEvents = (events ?? []).filter((e: any) => e.room_id === room.room_id);
+
+          const countMap: Record<string, number> = {};
+          for (const ev of roomEvents) {
+            countMap[ev.participant_id] = Math.max(0, (countMap[ev.participant_id] ?? 0) + ev.delta);
+          }
+          const total = Object.values(countMap).reduce((s, c) => s + c, 0);
+          const ranked = participants
+            .map(p => ({ name: p.name, color: p.color, count: countMap[p.id] ?? 0 }))
+            .sort((a, b) => b.count - a.count);
+
+          return {
+            id: `online-${room.room_id}`,
+            type: 'online' as const,
+            name: room.name,
+            date: room.date,
+            location: room.location ?? '',
+            total,
+            winner: ranked[0]?.count > 0 ? ranked[0] : null,
+            sortKey: new Date(room.created_at).getTime(),
+            roomId: room.room_id,
+          };
+        });
+
+        if (!cancelled) setPastRooms(items);
+      } catch {
+        // ネットワークエラーは無視（ローカル履歴のみ表示）
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // ローカル + オンラインを日付降順で統合
+  const allHistory = useMemo<HistoryItem[]>(() => {
+    return [...localHistory, ...pastRooms].sort((a, b) => b.sortKey - a.sortKey);
+  }, [localHistory, pastRooms]);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -264,59 +357,83 @@ export default function SetupScreen() {
 
               {error ? <Text style={styles.error}>{error}</Text> : null}
 
-              <TouchableOpacity
-                style={styles.startBtn}
-                onPress={handleStart}
-                activeOpacity={0.8}
-                testID="start-derby"
-              >
-                <Text style={styles.startBtnText}>{t('setup_start_btn')}</Text>
-                <ChevronRight color="#FFF" size={20} />
-              </TouchableOpacity>
+              <View style={styles.modeRow}>
+                <TouchableOpacity
+                  style={styles.modeCard}
+                  onPress={handleStart}
+                  activeOpacity={0.8}
+                  testID="start-derby"
+                >
+                  <View style={[styles.modeIconWrap, styles.modeIconLocal]}>
+                    <Smartphone color="#FFF" size={20} />
+                  </View>
+                  <Text style={styles.modeTitle}>{t('setup_start_btn')}</Text>
+                  <Text style={styles.modeSub}>{t('setup_start_sub')}</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.roomBtn, isCreatingRoom && styles.roomBtnDisabled]}
-                onPress={handleCreateRoom}
-                activeOpacity={0.8}
-                disabled={isCreatingRoom}
-                testID="create-room"
-              >
-                <Globe color={Colors.icyBlue} size={18} />
-                <Text style={styles.roomBtnText}>
-                  {isCreatingRoom ? '作成中...' : t('room_create_btn')}
-                </Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modeCard, styles.modeCardOnline, isCreatingRoom && styles.modeCardDisabled]}
+                  onPress={handleCreateRoom}
+                  activeOpacity={0.8}
+                  disabled={isCreatingRoom}
+                  testID="create-room"
+                >
+                  <View style={[styles.modeIconWrap, styles.modeIconOnline]}>
+                    <Globe color="#FFF" size={20} />
+                  </View>
+                  <Text style={styles.modeTitle}>{t('room_create_btn')}</Text>
+                  <Text style={styles.modeSub}>
+                    {isCreatingRoom ? '作成中...' : t('room_create_sub')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </Animated.View>
-            {pastDerbies.length > 0 && (
+            {allHistory.length > 0 && (
               <Animated.View style={{ opacity: fadeAnim, marginTop: 12 }}>
                 <Text style={styles.historyTitle}>{t('history_title')}</Text>
-                {pastDerbies.map(derby => {
-                  const { total, winner } = getDerbyStats(derby);
-                  return (
-                    <TouchableOpacity
-                      key={derby.id}
-                      style={styles.historyItem}
-                      onPress={() => router.push({ pathname: '/results', params: { derbyId: derby.id } })}
-                      activeOpacity={0.7}
-                    >
-                      <View style={styles.historyItemLeft}>
-                        <Text style={styles.historyItemName} numberOfLines={1}>{derby.name}</Text>
-                        <Text style={styles.historyItemMeta}>
-                          {derby.date}{derby.location ? `  ·  ${derby.location}` : ''}
-                        </Text>
-                        {winner && (
-                          <Text style={[styles.historyItemWinner, { color: winner.color }]}>
-                            🥇 {t('history_winner', { name: winner.name })}
+                {allHistory.map(item => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.historyItem}
+                    onPress={() => {
+                      if (item.type === 'local' && item.derbyId) {
+                        router.push({ pathname: '/results', params: { derbyId: item.derbyId } });
+                      } else if (item.type === 'online' && item.roomId) {
+                        router.push(`/room/${item.roomId}/results` as any);
+                      }
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.historyItemLeft}>
+                      <View style={styles.historyItemNameRow}>
+                        <Text style={styles.historyItemName} numberOfLines={1}>{item.name}</Text>
+                        <View style={[
+                          styles.historyBadge,
+                          item.type === 'online' ? styles.historyBadgeOnline : styles.historyBadgeLocal,
+                        ]}>
+                          <Text style={[
+                            styles.historyBadgeText,
+                            item.type === 'online' ? styles.historyBadgeTextOnline : styles.historyBadgeTextLocal,
+                          ]}>
+                            {item.type === 'online' ? `🌐 ${t('history_badge_online')}` : `📱 ${t('history_badge_local')}`}
                           </Text>
-                        )}
+                        </View>
                       </View>
-                      <View style={styles.historyItemRight}>
-                        <Text style={styles.historyItemTotal}>{total}</Text>
-                        <Text style={styles.historyItemUnit}>{t('derby_unit')}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
+                      <Text style={styles.historyItemMeta}>
+                        {item.date}{item.location ? `  ·  ${item.location}` : ''}
+                      </Text>
+                      {item.winner && (
+                        <Text style={[styles.historyItemWinner, { color: item.winner.color }]}>
+                          🥇 {t('history_winner', { name: item.winner.name })}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.historyItemRight}>
+                      <Text style={styles.historyItemTotal}>{item.total}</Text>
+                      <Text style={styles.historyItemUnit}>{t('derby_unit')}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
               </Animated.View>
             )}
           </ScrollView>
@@ -470,10 +587,39 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 3,
   },
+  historyItemNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
   historyItemName: {
     fontSize: 15,
     fontWeight: '700' as const,
     color: Colors.textPrimary,
+    flexShrink: 1,
+  },
+  historyBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  historyBadgeLocal: {
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  historyBadgeOnline: {
+    backgroundColor: 'rgba(168,213,226,0.12)',
+  },
+  historyBadgeText: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+  },
+  historyBadgeTextLocal: {
+    color: Colors.textSecondary,
+    opacity: 0.7,
+  },
+  historyBadgeTextOnline: {
+    color: Colors.icyBlue,
   },
   historyItemMeta: {
     fontSize: 11,
@@ -508,28 +654,58 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 8,
   },
-  startBtnText: {
-    color: '#FFF',
-    fontSize: 17,
-    fontWeight: '700' as const,
-  },
-  roomBtn: {
+  modeRow: {
     flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  modeCard: {
+    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    paddingVertical: 14,
+    paddingVertical: 20,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     gap: 8,
     borderWidth: 1.5,
-    borderColor: 'rgba(168,213,226,0.3)',
-    backgroundColor: 'rgba(168,213,226,0.06)',
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  roomBtnDisabled: {
+  modeCardOnline: {
+    backgroundColor: Colors.teal,
+    borderWidth: 0,
+    shadowColor: Colors.teal,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  modeCardDisabled: {
     opacity: 0.5,
   },
-  roomBtnText: {
-    color: Colors.icyBlue,
-    fontSize: 15,
-    fontWeight: '600' as const,
+  modeIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modeIconLocal: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  modeIconOnline: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  modeTitle: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '800' as const,
+    textAlign: 'center' as const,
+  },
+  modeSub: {
+    color: 'rgba(255,255,255,0.65)',
+    fontSize: 11,
+    fontWeight: '500' as const,
+    textAlign: 'center' as const,
+    lineHeight: 15,
   },
 });
