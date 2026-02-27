@@ -39,6 +39,11 @@ const ja = {
   modal_title: 'ワカサギダービー',
   modal_close: '閉じる',
 
+  // History
+  history_title: '過去のダービー',
+  history_total: '合計 {{count}} 匹',
+  history_winner: '優勝: {{name}}',
+
   // Weather hook errors
   weather_error_location: '位置情報を取得できませんでした',
   weather_error_temperature: '気温を取得できませんでした',

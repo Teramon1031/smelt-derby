@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -19,13 +19,30 @@ import Colors from '@/constants/colors';
 import { useDerby } from '@/contexts/DerbyContext';
 import MountainBackground from '@/components/MountainBackground';
 import FishIcon from '@/components/FishIcon';
+import type { Derby } from '@/types/derby';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+function getDerbyStats(derby: Derby) {
+  const total = derby.catches.reduce((s, c) => s + c.count, 0);
+  const counts = derby.participants.map(p => ({
+    name: p.name,
+    color: p.color,
+    count: derby.catches.filter(c => c.participantId === p.id).reduce((s, c) => s + c.count, 0),
+  }));
+  counts.sort((a, b) => b.count - a.count);
+  return { total, winner: counts[0] ?? null };
+}
 
 export default function SetupScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { activeDerby, createDerby } = useDerby();
+  const { activeDerby, createDerby, derbies } = useDerby();
+
+  const pastDerbies = useMemo(
+    () => [...derbies].filter(d => !d.isActive).sort((a, b) => b.createdAt - a.createdAt),
+    [derbies],
+  );
   const [eventName, setEventName] = useState('');
   const [location, setLocation] = useState('');
   const [participants, setParticipants] = useState<string[]>(['']);
@@ -213,6 +230,38 @@ export default function SetupScreen() {
                 <ChevronRight color="#FFF" size={20} />
               </TouchableOpacity>
             </Animated.View>
+            {pastDerbies.length > 0 && (
+              <Animated.View style={{ opacity: fadeAnim, marginTop: 12 }}>
+                <Text style={styles.historyTitle}>{t('history_title')}</Text>
+                {pastDerbies.map(derby => {
+                  const { total, winner } = getDerbyStats(derby);
+                  return (
+                    <TouchableOpacity
+                      key={derby.id}
+                      style={styles.historyItem}
+                      onPress={() => router.push({ pathname: '/results', params: { derbyId: derby.id } })}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.historyItemLeft}>
+                        <Text style={styles.historyItemName} numberOfLines={1}>{derby.name}</Text>
+                        <Text style={styles.historyItemMeta}>
+                          {derby.date}{derby.location ? `  ·  ${derby.location}` : ''}
+                        </Text>
+                        {winner && (
+                          <Text style={[styles.historyItemWinner, { color: winner.color }]}>
+                            🥇 {t('history_winner', { name: winner.name })}
+                          </Text>
+                        )}
+                      </View>
+                      <View style={styles.historyItemRight}>
+                        <Text style={styles.historyItemTotal}>{total}</Text>
+                        <Text style={styles.historyItemUnit}>{t('derby_unit')}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </Animated.View>
+            )}
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -338,6 +387,59 @@ const styles = StyleSheet.create({
     color: Colors.danger,
     fontSize: 13,
     textAlign: 'center',
+  },
+  historyTitle: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: Colors.textSecondary,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.8,
+    marginBottom: 10,
+    marginTop: 8,
+    opacity: 0.6,
+  },
+  historyItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  historyItemLeft: {
+    flex: 1,
+    gap: 3,
+  },
+  historyItemName: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    color: Colors.textPrimary,
+  },
+  historyItemMeta: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    opacity: 0.7,
+  },
+  historyItemWinner: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+  },
+  historyItemRight: {
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  historyItemTotal: {
+    fontSize: 22,
+    fontWeight: '900' as const,
+    color: Colors.textPrimary,
+  },
+  historyItemUnit: {
+    fontSize: 10,
+    color: Colors.textSecondary,
+    opacity: 0.6,
   },
   startBtn: {
     flexDirection: 'row',

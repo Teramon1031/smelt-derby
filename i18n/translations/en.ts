@@ -39,6 +39,11 @@ const en = {
   modal_title: 'Smelt Derby',
   modal_close: 'Close',
 
+  // History
+  history_title: 'Past Derbies',
+  history_total: 'Total: {{count}} fish',
+  history_winner: 'Winner: {{name}}',
+
   // Weather hook errors
   weather_error_location: 'Could not retrieve location',
   weather_error_temperature: 'Could not retrieve temperature',

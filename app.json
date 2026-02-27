@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "ワカサギ釣りダービー",
-    "slug": "wakasagi-fishing-daily",
+    "slug": "smelt-derby",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -15,14 +15,18 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "app.rork.wakasagi-fishing-daily"
+      "bundleIdentifier": "io.teram.smelt-derby",
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.rork.wakasagi_fishing_daily"
+      "package": "io.teram.smelt-derby"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -39,6 +43,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": "https://rork.com/"
+      },
+      "eas": {
+        "projectId": "7737a742-839b-4c08-9496-856d873283d5"
+      }
     }
   }
 }
