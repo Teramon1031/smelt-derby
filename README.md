@@ -2,8 +2,12 @@
 
 A web/mobile app for recording and sharing catch counts in real time during smelt (wakasagi) ice-fishing competitions.
 
-Web: https://wakasagi.vercel.app/
-iOS(now on testflight): https://testflight.apple.com/join/um9CD1tm
+- Web: https://wakasagi.vercel.app/
+- iOS(now on testflight): https://testflight.apple.com/join/um9CD1tm
+
+<img width="290" height="631" alt="image" src="https://github.com/user-attachments/assets/93e3c95f-c5c5-421a-a5ba-9d12518c0e25" />  <img width="291" height="628" alt="image" src="https://github.com/user-attachments/assets/5d68c37e-5821-4cfd-8692-7e9e9bc2a888" /> <img width="291" height="631" alt="image" src="https://github.com/user-attachments/assets/bc7df21d-289f-4fa7-87cb-452d3b206cc7" />
+
+
 
 ## Features
 
